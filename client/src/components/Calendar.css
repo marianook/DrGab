@@ -1,0 +1,106 @@
+.calendario {
+  background: var(--color-superficie);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 16px;
+}
+
+.calendario-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.calendario-header h3 {
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.calendario-dias-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-texto-suave);
+  margin-bottom: 6px;
+}
+
+.calendario-grilla {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendario-celda {
+  min-height: 48px;
+  border-radius: var(--radio);
+  border: 2px solid var(--color-borde);
+  background: var(--color-fondo);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-texto);
+  touch-action: manipulation;
+}
+.calendario-celda:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.calendario-celda.fuera-de-mes {
+  visibility: hidden;
+}
+.calendario-celda.hoy {
+  border-color: var(--color-clinica-dark);
+}
+.calendario-celda.estado-disponible {
+  background: #e6f6ea;
+  border-color: #b9e6c4;
+  color: #1c2530;
+}
+.calendario-celda.estado-ocupado {
+  background: #fdecea;
+  border-color: #f3c2bc;
+  color: #1c2530;
+}
+.calendario-celda.seleccionado {
+  background: var(--color-clinica) !important;
+  border-color: var(--color-clinica-dark) !important;
+  color: #fff !important;
+}
+
+.calendario-leyenda {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--color-texto-suave);
+}
+.calendario-leyenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.punto {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.punto.disponible {
+  background: #4caf6d;
+}
+.punto.ocupado {
+  background: var(--color-peligro);
+}
+.punto.seleccionado-punto {
+  background: var(--color-clinica);
+}
+
+@media (min-width: 768px) {
+  .calendario-celda {
+    min-height: 56px;
+    font-size: 17px;
+  }
+}

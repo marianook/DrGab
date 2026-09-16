@@ -1,0 +1,89 @@
+import { useState } from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
+import { useSpecialty } from '../context/SpecialtyContext.jsx';
+import { useTheme } from '../context/ThemeContext.jsx';
+
+const ITEMS = [
+  { to: '/pacientes', icono: '🧑‍⚕️', label: 'Pacientes' },
+  { to: '/turnos', icono: '📅', label: 'Turnos' },
+  { to: '/estadisticas', icono: '📊', label: 'Estadísticas' },
+  { to: '/configuracion', icono: '⚙️', label: 'Configuración' },
+];
+
+export default function Layout() {
+  const [abierto, setAbierto] = useState(false);
+  const { usuario, logout } = useAuth();
+  const { especialidad, setEspecialidad } = useSpecialty();
+  const { tema, alternarTema } = useTheme();
+  const navigate = useNavigate();
+
+  const cerrarSesion = () => {
+    logout();
+    navigate('/login');
+  };
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <button className="btn-menu" aria-label="Abrir menú" onClick={() => setAbierto((v) => !v)}>
+          ☰
+        </button>
+        <span className="logo">DrGab</span>
+
+        <div className="selector-especialidad">
+          <button
+            className={`clinica ${especialidad === 'Clinica' ? 'activo' : ''}`}
+            onClick={() => setEspecialidad('Clinica')}
+          >
+            Clínica
+          </button>
+          <button
+            className={`endocrino ${especialidad === 'Endocrinologia' ? 'activo' : ''}`}
+            onClick={() => setEspecialidad('Endocrinologia')}
+          >
+            Endocrinología
+          </button>
+        </div>
+
+        <button
+          className="btn btn-ghost oculto-movil"
+          onClick={alternarTema}
+          style={{ minHeight: 44, padding: '8px 14px' }}
+          title="Cambiar tema"
+        >
+          {tema === 'claro' ? '🌙' : '☀️'}
+        </button>
+
+        <div className="usuario">
+          <span className="oculto-movil">{usuario}</span>
+          <button className="btn btn-secundario" onClick={cerrarSesion} style={{ minHeight: 44, padding: '8px 16px' }}>
+            Salir
+          </button>
+        </div>
+      </header>
+
+      {abierto && <div className="sidebar-overlay" onClick={() => setAbierto(false)} />}
+
+      <aside className={`sidebar ${abierto ? 'abierto' : ''}`}>
+        <nav>
+          {ITEMS.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => (isActive ? 'activo' : '')}
+              onClick={() => setAbierto(false)}
+            >
+              <span className="icono">{item.icono}</span>
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
+
+      <main className="contenido">
+        <Outlet />
+      </main>
+    </div>
+  );
+}

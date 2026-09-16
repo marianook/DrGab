@@ -1,0 +1,38 @@
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .imprimible,
+  .imprimible * {
+    visibility: visible;
+  }
+  .imprimible {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 24px;
+  }
+  .no-imprimir {
+    display: none !important;
+  }
+  .membrete {
+    display: flex !important;
+  }
+}
+
+.membrete {
+  display: none;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 3px solid currentColor;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+.membrete h2 {
+  margin: 0;
+}
+.membrete p {
+  margin: 0;
+  color: var(--color-texto-suave);
+}
