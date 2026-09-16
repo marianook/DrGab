@@ -342,3 +342,14 @@ table.tabla tbody tr:active {
     display: revert;
   }
 }
+
+.banner-demo-local {
+  background: #fff3cd;
+  color: #8a6300;
+  border: 1px solid #ffe28a;
+  border-radius: var(--radio);
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}

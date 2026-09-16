@@ -14,7 +14,39 @@ DrGab/
 
 - Node.js 18 o superior
 
+## Modo de datos: local (localStorage) vs. backend real
+
+El frontend puede funcionar de dos formas, controladas por `client/src/api/client.js`:
+
+- **`local` (modo actual por defecto)**: todo se guarda en el `localStorage` del navegador. No hace falta backend corriendo. Pensado para probar la interfaz y el flujo completo antes de invertir en el backend. Los datos son **por navegador** (no se comparten entre dispositivos ni sobreviven a un "borrar datos del sitio"). La IA y los adjuntos grandes no están disponibles en este modo.
+- **`remote`**: habla con la API real en `server/` (SQLite persistente, IA con Claude, adjuntos en disco).
+
+Para pasar a modo remoto cuando el backend esté listo, en `client/.env`:
+
+```
+VITE_API_MODE=remote
+```
+
+No hace falta tocar ningún componente: todas las pantallas usan `client/src/api/client.js` sin saber cuál de los dos modos está activo.
+
 ## Puesta en marcha
+
+### Probar solo el frontend (sin backend)
+
+```bash
+cd client
+npm install
+npm run dev              # http://localhost:5173
+```
+
+Entrás con usuario `doctor` / contraseña `doctor123` (fijos en modo local) y ya podés usar todo el sistema.
+
+### Deploy en Vercel / Netlify (solo frontend, modo local)
+
+Como en modo `local` no depende de ningún backend, se puede desplegar el `client/` tal cual en Vercel o Netlify:
+
+- **Vercel**: importar el repo, configurar el *root directory* en `client/`, build command `npm run build`, output `dist`. Ya incluye `vercel.json` con el rewrite para que las rutas de React Router funcionen.
+- **Netlify**: mismo *base directory* `client/`, build command `npm run build`, publish directory `client/dist`. Ya incluye `public/_redirects` para las rutas de React Router.
 
 ### 1. Backend
 

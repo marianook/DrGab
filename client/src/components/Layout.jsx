@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSpecialty } from '../context/SpecialtyContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { MODO_API } from '../api/client.js';
 
 const ITEMS = [
   { to: '/pacientes', icono: '🧑‍⚕️', label: 'Pacientes' },
@@ -82,6 +83,11 @@ export default function Layout() {
       </aside>
 
       <main className="contenido">
+        {MODO_API === 'local' && (
+          <div className="banner-demo-local">
+            🧪 Modo de prueba local: los datos se guardan solo en este navegador (localStorage). Todavía no hay backend conectado.
+          </div>
+        )}
         <Outlet />
       </main>
     </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { MODO_API } from '../api/client.js';
 
 export default function Login() {
   const { usuario, login } = useAuth();
@@ -68,6 +69,11 @@ export default function Login() {
           <button className="btn btn-primario btn-bloque" disabled={enviando} type="submit">
             {enviando ? <span className="spinner" /> : 'Ingresar'}
           </button>
+          {MODO_API === 'local' && (
+            <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--color-texto-suave)' }}>
+              Modo de prueba: usuario <strong>doctor</strong> / contraseña <strong>doctor123</strong>
+            </p>
+          )}
         </div>
       </form>
     </div>

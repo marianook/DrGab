@@ -192,7 +192,7 @@ export default function ConsultaDetail() {
         {consulta.adjuntos.length === 0 && <p style={{ color: 'var(--color-texto-suave)' }}>No hay archivos adjuntos.</p>}
         {consulta.adjuntos.map((a) => (
           <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' }}>
-            <a href={`/uploads/${a.nombre_archivo}`} target="_blank" rel="noreferrer">
+            <a href={a.url || `/uploads/${a.nombre_archivo}`} target="_blank" rel="noreferrer">
               📎 {a.nombre_original}
             </a>
             <button className="btn btn-peligro" style={{ minHeight: 40, padding: '6px 14px' }} onClick={() => eliminarAdjunto(a.id)}>
