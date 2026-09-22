@@ -8,7 +8,7 @@ const ESTADOS = ['pendiente', 'completado', 'cancelado'];
 const ESTADOS_PAGO = ['no_requerido', 'pendiente', 'pagado', 'rechazado'];
 
 function conPaciente(turno) {
-  const paciente = db.prepare('SELECT id, nombre, dni, telefono FROM pacientes WHERE id = ?').get(turno.paciente_id);
+  const paciente = db.prepare('SELECT id, nombre, dni, telefono, email FROM pacientes WHERE id = ?').get(turno.paciente_id);
   return { ...turno, paciente };
 }
 

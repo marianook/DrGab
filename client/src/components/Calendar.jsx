@@ -27,7 +27,7 @@ export default function Calendar({ anio, mes, onCambiarMes, estadosPorDia, diaSe
 
       <div className="calendario-grilla">
         {celdas.map((celda) => {
-          const estado = estadosPorDia[celda.iso] || 'sin-atencion';
+          const { estado = 'sin-atencion', disponibles, total } = estadosPorDia[celda.iso] || {};
           const clases = [
             'calendario-celda',
             !celda.enMes ? 'fuera-de-mes' : '',
@@ -46,7 +46,12 @@ export default function Calendar({ anio, mes, onCambiarMes, estadosPorDia, diaSe
               onClick={() => onSeleccionarDia(celda.iso)}
               disabled={!celda.enMes}
             >
-              {celda.fecha.getDate()}
+              <span className="calendario-numero">{celda.fecha.getDate()}</span>
+              {estado !== 'sin-atencion' && (
+                <span className="calendario-contador">
+                  {disponibles}/{total}
+                </span>
+              )}
             </button>
           );
         })}

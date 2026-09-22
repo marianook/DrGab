@@ -33,7 +33,12 @@
 }
 
 .calendario-celda {
-  min-height: 48px;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   border-radius: var(--radio);
   border: 2px solid var(--color-borde);
   background: var(--color-fondo);
@@ -42,6 +47,18 @@
   cursor: pointer;
   color: var(--color-texto);
   touch-action: manipulation;
+}
+.calendario-numero {
+  line-height: 1;
+}
+.calendario-contador {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-texto-suave);
+  line-height: 1;
+}
+.calendario-celda.seleccionado .calendario-contador {
+  color: rgba(255, 255, 255, 0.85);
 }
 .calendario-celda:disabled {
   opacity: 0.3;
@@ -100,7 +117,10 @@
 
 @media (min-width: 768px) {
   .calendario-celda {
-    min-height: 56px;
+    min-height: 60px;
     font-size: 17px;
+  }
+  .calendario-contador {
+    font-size: 12px;
   }
 }

@@ -124,7 +124,7 @@ function guardarMedicamentos(db, pacienteId, consultaId, especialidad, medicamen
 
 function conPaciente(db, turno) {
   const p = db.pacientes.find((x) => x.id === turno.paciente_id);
-  const paciente = p ? { id: p.id, nombre: p.nombre, dni: p.dni, telefono: p.telefono } : null;
+  const paciente = p ? { id: p.id, nombre: p.nombre, dni: p.dni, telefono: p.telefono, email: p.email } : null;
   return { ...turno, paciente };
 }
 

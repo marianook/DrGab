@@ -81,11 +81,12 @@ export default function TurnosPage() {
       const diaSemana = cursor.getDay();
       const bloques = bloquesPorDia[diaSemana];
       if (!bloques || bloques.length === 0) {
-        estados[iso] = 'sin-atencion';
+        estados[iso] = { estado: 'sin-atencion' };
       } else {
         const total = slotsPosiblesPorDia(bloques);
         const ocupados = ocupadosPorDia[iso] || 0;
-        estados[iso] = ocupados >= total ? 'ocupado' : 'disponible';
+        const disponibles = Math.max(0, total - ocupados);
+        estados[iso] = { estado: disponibles === 0 ? 'ocupado' : 'disponible', disponibles, total };
       }
       cursor.setDate(cursor.getDate() + 1);
     }
@@ -190,6 +191,11 @@ export default function TurnosPage() {
                         </span>
                       )}
                       <div style={{ fontSize: 14, color: 'var(--color-texto-suave)' }}>{t.motivo || 'Sin motivo especificado'}</div>
+                      {(t.paciente?.telefono || t.paciente?.email) && (
+                        <div style={{ fontSize: 13, color: 'var(--color-texto-suave)' }}>
+                          {[t.paciente?.telefono, t.paciente?.email].filter(Boolean).join(' · ')}
+                        </div>
+                      )}
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       <span className={`badge badge-estado-${t.estado}`}>{ESTADO_LABEL[t.estado]}</span>
@@ -203,6 +209,15 @@ export default function TurnosPage() {
                       <button className="btn btn-secundario" onClick={() => setModalReserva({ turno: t })}>
                         Reprogramar
                       </button>
+                      {t.paciente?.telefono && (
+                        <a
+                          href={`tel:${t.paciente.telefono}`}
+                          className="btn btn-secundario"
+                          style={{ textDecoration: 'none' }}
+                        >
+                          📞 Llamar
+                        </a>
+                      )}
                       <button className="btn btn-secundario" onClick={() => marcarCompletado(t)}>
                         Marcar completado
                       </button>
@@ -236,6 +251,7 @@ export default function TurnosPage() {
                     <th>Fecha</th>
                     <th>Hora</th>
                     <th>Paciente</th>
+                    <th>Contacto</th>
                     <th className="oculto-movil">Motivo</th>
                     <th>Pago</th>
                     <th></th>
@@ -260,6 +276,15 @@ export default function TurnosPage() {
                           </span>
                         )}
                       </td>
+                      <td style={{ fontSize: 13 }}>
+                        {t.paciente?.telefono && <div>{t.paciente.telefono}</div>}
+                        {t.paciente?.email && (
+                          <div style={{ color: 'var(--color-texto-suave)' }}>{t.paciente.email}</div>
+                        )}
+                        {!t.paciente?.telefono && !t.paciente?.email && (
+                          <span style={{ color: 'var(--color-texto-suave)' }}>—</span>
+                        )}
+                      </td>
                       <td className="oculto-movil">{t.motivo || '—'}</td>
                       <td>
                         {t.estado_pago && t.estado_pago !== 'no_requerido' ? (
@@ -277,6 +302,15 @@ export default function TurnosPage() {
                           >
                             Reprogramar
                           </button>
+                          {t.paciente?.telefono && (
+                            <a
+                              href={`tel:${t.paciente.telefono}`}
+                              className="btn btn-secundario"
+                              style={{ minHeight: 40, padding: '6px 14px', textDecoration: 'none' }}
+                            >
+                              📞 Llamar
+                            </a>
+                          )}
                           <button
                             className="btn btn-secundario"
                             style={{ minHeight: 40, padding: '6px 14px' }}
