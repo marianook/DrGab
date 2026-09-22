@@ -17,10 +17,12 @@ function formatoHora(fechaHora) {
 export default function TurnosPage() {
   const { especialidad } = useSpecialty();
   const hoy = new Date();
+  const [vista, setVista] = useState('calendario');
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [mes, setMes] = useState(hoy.getMonth());
   const [diaSeleccionado, setDiaSeleccionado] = useState(formatoISO(hoy));
   const [turnosMes, setTurnosMes] = useState([]);
+  const [listado, setListado] = useState([]);
   const [disponibilidad, setDisponibilidad] = useState([]);
   const [proximos, setProximos] = useState([]);
   const [modalReserva, setModalReserva] = useState(null);
@@ -36,7 +38,20 @@ export default function TurnosPage() {
       .catch((e) => setError(e.message));
   };
 
+  const cargarListado = () => {
+    api
+      .get(`/turnos?especialidad=${especialidad}&estado=pendiente&desde=${formatoISO(hoy)}T00:00:00`)
+      .then(setListado)
+      .catch((e) => setError(e.message));
+  };
+
+  const recargar = () => {
+    cargarMes();
+    cargarListado();
+  };
+
   useEffect(cargarMes, [anio, mes, especialidad]);
+  useEffect(cargarListado, [especialidad]);
 
   useEffect(() => {
     api.get(`/disponibilidad?especialidad=${especialidad}`).then(setDisponibilidad);
@@ -94,29 +109,43 @@ export default function TurnosPage() {
   const cancelarTurno = async () => {
     await api.put(`/turnos/${turnoACancelar.id}`, { estado: 'cancelado' });
     setTurnoACancelar(null);
-    cargarMes();
+    recargar();
   };
 
   const marcarCompletado = async (turno) => {
     await api.put(`/turnos/${turno.id}`, { estado: 'completado' });
-    cargarMes();
+    recargar();
   };
 
   const marcarPagado = async (turno) => {
     await api.put(`/turnos/${turno.id}`, { estadoPago: 'pagado' });
-    cargarMes();
+    recargar();
   };
 
   return (
     <div>
       <div className="encabezado-pagina">
         <h1>Turnos</h1>
-        <button
-          className={`btn ${especialidad === 'Clinica' ? 'btn-clinica' : 'btn-endocrino'}`}
-          onClick={() => setModalReserva({ fecha: diaSeleccionado })}
-        >
-          + Reservar turno
-        </button>
+        <div className="grupo-botones">
+          <button
+            className={`btn ${vista === 'calendario' ? 'btn-primario' : 'btn-secundario'}`}
+            onClick={() => setVista('calendario')}
+          >
+            📅 Calendario
+          </button>
+          <button
+            className={`btn ${vista === 'listado' ? 'btn-primario' : 'btn-secundario'}`}
+            onClick={() => setVista('listado')}
+          >
+            📋 Listado
+          </button>
+          <button
+            className={`btn ${especialidad === 'Clinica' ? 'btn-clinica' : 'btn-endocrino'}`}
+            onClick={() => setModalReserva({ fecha: diaSeleccionado })}
+          >
+            + Reservar turno
+          </button>
+        </div>
       </div>
 
       {error && <div className="alerta alerta-error">{error}</div>}
@@ -134,63 +163,153 @@ export default function TurnosPage() {
         </div>
       )}
 
-      <div className="form-grid dos-columnas">
-        <Calendar
-          anio={anio}
-          mes={mes}
-          onCambiarMes={cambiarMes}
-          estadosPorDia={estadosPorDia}
-          diaSeleccionado={diaSeleccionado}
-          onSeleccionarDia={setDiaSeleccionado}
-        />
+      {vista === 'calendario' && (
+        <div className="form-grid dos-columnas">
+          <Calendar
+            anio={anio}
+            mes={mes}
+            onCambiarMes={cambiarMes}
+            estadosPorDia={estadosPorDia}
+            diaSeleccionado={diaSeleccionado}
+            onSeleccionarDia={setDiaSeleccionado}
+          />
 
-        <div className="card">
-          <h3>Turnos del {new Date(`${diaSeleccionado}T00:00:00`).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
-          {turnosDelDia.length === 0 ? (
-            <p style={{ color: 'var(--color-texto-suave)' }}>No hay turnos para este día.</p>
-          ) : (
-            turnosDelDia.map((t) => (
-              <div key={t.id} className="card" style={{ boxShadow: 'none', border: '1px solid var(--color-borde)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                  <div>
-                    <strong>{formatoHora(t.fecha_hora)}</strong> — {t.paciente?.nombre}
-                    {t.origen === 'publico' && (
-                      <span className="badge badge-clinica" style={{ marginLeft: 8 }}>
-                        Reservado online
-                      </span>
-                    )}
-                    <div style={{ fontSize: 14, color: 'var(--color-texto-suave)' }}>{t.motivo || 'Sin motivo especificado'}</div>
+          <div className="card">
+            <h3>Turnos del {new Date(`${diaSeleccionado}T00:00:00`).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+            {turnosDelDia.length === 0 ? (
+              <p style={{ color: 'var(--color-texto-suave)' }}>No hay turnos para este día.</p>
+            ) : (
+              turnosDelDia.map((t) => (
+                <div key={t.id} className="card" style={{ boxShadow: 'none', border: '1px solid var(--color-borde)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <strong>{formatoHora(t.fecha_hora)}</strong> — {t.paciente?.nombre}
+                      {t.origen === 'publico' && (
+                        <span className="badge badge-clinica" style={{ marginLeft: 8 }}>
+                          Reservado online
+                        </span>
+                      )}
+                      <div style={{ fontSize: 14, color: 'var(--color-texto-suave)' }}>{t.motivo || 'Sin motivo especificado'}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <span className={`badge badge-estado-${t.estado}`}>{ESTADO_LABEL[t.estado]}</span>
+                      {t.estado_pago && t.estado_pago !== 'no_requerido' && (
+                        <span className={`badge ${ESTADO_PAGO_CLASE[t.estado_pago]}`}>{ESTADO_PAGO_LABEL[t.estado_pago]}</span>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <span className={`badge badge-estado-${t.estado}`}>{ESTADO_LABEL[t.estado]}</span>
-                    {t.estado_pago && t.estado_pago !== 'no_requerido' && (
-                      <span className={`badge ${ESTADO_PAGO_CLASE[t.estado_pago]}`}>{ESTADO_PAGO_LABEL[t.estado_pago]}</span>
-                    )}
-                  </div>
-                </div>
-                {t.estado === 'pendiente' && (
-                  <div className="grupo-botones" style={{ marginTop: 10 }}>
-                    <button className="btn btn-secundario" onClick={() => setModalReserva({ turno: t })}>
-                      Reprogramar
-                    </button>
-                    <button className="btn btn-secundario" onClick={() => marcarCompletado(t)}>
-                      Marcar completado
-                    </button>
-                    {t.estado_pago === 'pendiente' && (
-                      <button className="btn btn-secundario" onClick={() => marcarPagado(t)}>
-                        Marcar como pagado
+                  {t.estado === 'pendiente' && (
+                    <div className="grupo-botones" style={{ marginTop: 10 }}>
+                      <button className="btn btn-secundario" onClick={() => setModalReserva({ turno: t })}>
+                        Reprogramar
                       </button>
-                    )}
-                    <button className="btn btn-peligro" onClick={() => setTurnoACancelar(t)}>
-                      Cancelar
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))
+                      <button className="btn btn-secundario" onClick={() => marcarCompletado(t)}>
+                        Marcar completado
+                      </button>
+                      {t.estado_pago === 'pendiente' && (
+                        <button className="btn btn-secundario" onClick={() => marcarPagado(t)}>
+                          Marcar como pagado
+                        </button>
+                      )}
+                      <button className="btn btn-peligro" onClick={() => setTurnoACancelar(t)}>
+                        Cancelar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {vista === 'listado' && (
+        <div className="card">
+          <h3>Próximos turnos pendientes</h3>
+          {listado.length === 0 ? (
+            <p style={{ color: 'var(--color-texto-suave)' }}>No hay turnos pendientes a partir de hoy.</p>
+          ) : (
+            <div className="tabla-wrap">
+              <table className="tabla">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Paciente</th>
+                    <th className="oculto-movil">Motivo</th>
+                    <th>Pago</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {listado.map((t) => (
+                    <tr key={t.id}>
+                      <td>
+                        {new Date(`${t.fecha_hora.slice(0, 10)}T00:00:00`).toLocaleDateString('es-AR', {
+                          weekday: 'short',
+                          day: 'numeric',
+                          month: 'short',
+                        })}
+                      </td>
+                      <td>{formatoHora(t.fecha_hora)}</td>
+                      <td>
+                        {t.paciente?.nombre}
+                        {t.origen === 'publico' && (
+                          <span className="badge badge-clinica" style={{ marginLeft: 6 }}>
+                            Online
+                          </span>
+                        )}
+                      </td>
+                      <td className="oculto-movil">{t.motivo || '—'}</td>
+                      <td>
+                        {t.estado_pago && t.estado_pago !== 'no_requerido' ? (
+                          <span className={`badge ${ESTADO_PAGO_CLASE[t.estado_pago]}`}>{ESTADO_PAGO_LABEL[t.estado_pago]}</span>
+                        ) : (
+                          <span style={{ color: 'var(--color-texto-suave)' }}>—</span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="grupo-botones">
+                          <button
+                            className="btn btn-secundario"
+                            style={{ minHeight: 40, padding: '6px 14px' }}
+                            onClick={() => setModalReserva({ turno: t })}
+                          >
+                            Reprogramar
+                          </button>
+                          <button
+                            className="btn btn-secundario"
+                            style={{ minHeight: 40, padding: '6px 14px' }}
+                            onClick={() => marcarCompletado(t)}
+                          >
+                            Completado
+                          </button>
+                          {t.estado_pago === 'pendiente' && (
+                            <button
+                              className="btn btn-secundario"
+                              style={{ minHeight: 40, padding: '6px 14px' }}
+                              onClick={() => marcarPagado(t)}
+                            >
+                              Marcar pagado
+                            </button>
+                          )}
+                          <button
+                            className="btn btn-peligro"
+                            style={{ minHeight: 40, padding: '6px 14px' }}
+                            onClick={() => setTurnoACancelar(t)}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
-      </div>
+      )}
 
       {modalReserva && (
         <BookingModal
@@ -200,7 +319,7 @@ export default function TurnosPage() {
           onClose={() => setModalReserva(null)}
           onGuardado={() => {
             setModalReserva(null);
-            cargarMes();
+            recargar();
           }}
         />
       )}
