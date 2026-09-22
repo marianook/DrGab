@@ -5,12 +5,27 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { ESPECIALIDADES } from '../../context/SpecialtyContext.jsx';
 import { formatoISO } from '../../utils/calendario.js';
 
+const VENTANA_DIAS = 14;
+const DIAS_LARGOS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const MESES_CORTOS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+function sumarDias(base, cantidad) {
+  const d = new Date(base);
+  d.setDate(d.getDate() + cantidad);
+  return d;
+}
+
+function formatoDiaCorto(iso) {
+  const d = new Date(`${iso}T00:00:00`);
+  return `${DIAS_LARGOS[d.getDay()]} ${d.getDate()} ${MESES_CORTOS[d.getMonth()]}`;
+}
+
 export default function ReservarPublico() {
   const { usuario } = useAuth();
   const [paso, setPaso] = useState('especialidad');
   const [especialidad, setEspecialidad] = useState('');
-  const [fecha, setFecha] = useState(formatoISO(new Date()));
-  const [slots, setSlots] = useState([]);
+  const [offsetDias, setOffsetDias] = useState(0);
+  const [dias, setDias] = useState([]);
   const [cargandoSlots, setCargandoSlots] = useState(false);
   const [horaSeleccionada, setHoraSeleccionada] = useState('');
   const [precios, setPrecios] = useState({ pagoHabilitado: false, precios: {} });
@@ -24,29 +39,31 @@ export default function ReservarPublico() {
     api.get('/public/precios').then(setPrecios).catch(() => {});
   }, []);
 
+  const desdeVentana = formatoISO(sumarDias(new Date(), offsetDias));
+  const hastaVentana = formatoISO(sumarDias(new Date(), offsetDias + VENTANA_DIAS - 1));
+
   useEffect(() => {
-    if (!especialidad || !fecha) return;
+    if (!especialidad) return;
     setCargandoSlots(true);
     setHoraSeleccionada('');
     api
-      .get(`/public/slots?especialidad=${especialidad}&fecha=${fecha}`)
-      .then((r) => setSlots(r.slots))
+      .get(`/public/slots-rango?especialidad=${especialidad}&desde=${desdeVentana}&dias=${VENTANA_DIAS}`)
+      .then((r) => setDias(r.dias))
       .catch((e) => setError(e.message))
       .finally(() => setCargandoSlots(false));
-  }, [especialidad, fecha]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [especialidad, desdeVentana]);
 
   const elegirEspecialidad = (esp) => {
     setError('');
     setEspecialidad(esp);
+    setOffsetDias(0);
     setPaso('horario');
   };
 
-  const confirmarHorario = () => {
-    if (!horaSeleccionada) {
-      setError('Elegí un horario disponible');
-      return;
-    }
+  const elegirHorario = (fechaHora) => {
     setError('');
+    setHoraSeleccionada(fechaHora);
     setPaso('datos');
   };
 
@@ -115,45 +132,55 @@ export default function ReservarPublico() {
         {paso === 'horario' && infoEsp && (
           <>
             <h2 style={{ color: infoEsp.color }}>{infoEsp.nombre}</h2>
-            <div className="campo">
-              <label htmlFor="fecha-publica">Fecha</label>
-              <input
-                id="fecha-publica"
-                type="date"
-                value={fecha}
-                min={formatoISO(new Date())}
-                onChange={(e) => setFecha(e.target.value)}
-              />
+
+            <div className="navegador-fechas">
+              <button
+                type="button"
+                className="btn btn-secundario"
+                onClick={() => setOffsetDias((o) => Math.max(0, o - VENTANA_DIAS))}
+                disabled={offsetDias === 0}
+              >
+                ‹‹ Retroceder
+              </button>
+              <strong style={{ fontSize: 14, textAlign: 'center' }}>
+                Turnos desde {formatoDiaCorto(desdeVentana)} hasta {formatoDiaCorto(hastaVentana)}
+              </strong>
+              <button type="button" className="btn btn-secundario" onClick={() => setOffsetDias((o) => o + VENTANA_DIAS)}>
+                Avanzar ››
+              </button>
             </div>
-            <div className="campo">
-              <label>Horario disponible</label>
-              {cargandoSlots ? (
-                <p>Buscando horarios…</p>
-              ) : slots.length === 0 ? (
-                <p style={{ color: 'var(--color-texto-suave)' }}>No hay atención este día. Elegí otra fecha.</p>
-              ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {slots.map((s) => (
-                    <button
-                      type="button"
-                      key={s.hora}
-                      disabled={!s.disponible}
-                      className={`btn ${horaSeleccionada === s.fechaHora ? 'btn-primario' : 'btn-secundario'}`}
-                      style={{ minWidth: 84, opacity: s.disponible ? 1 : 0.4 }}
-                      onClick={() => setHoraSeleccionada(s.fechaHora)}
-                    >
-                      {s.hora}
-                    </button>
-                  ))}
+
+            {cargandoSlots ? (
+              <p>Buscando horarios…</p>
+            ) : dias.length === 0 ? (
+              <p style={{ color: 'var(--color-texto-suave)' }}>
+                No hay turnos configurados en este rango de fechas. Probá avanzar para ver más adelante.
+              </p>
+            ) : (
+              dias.map((dia) => (
+                <div key={dia.fecha} style={{ marginBottom: 16 }}>
+                  <div className={`barra-dia ${infoEsp.claseBtn}`}>{formatoDiaCorto(dia.fecha)}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                    {dia.slots.map((s) => (
+                      <button
+                        type="button"
+                        key={s.hora}
+                        disabled={!s.disponible}
+                        className="btn btn-secundario"
+                        style={{ minWidth: 84, opacity: s.disponible ? 1 : 0.4 }}
+                        onClick={() => elegirHorario(s.fechaHora)}
+                      >
+                        {s.hora}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
-            </div>
+              ))
+            )}
+
             <div className="grupo-botones" style={{ marginTop: 16 }}>
               <button type="button" className="btn btn-secundario" onClick={() => setPaso('especialidad')}>
                 Volver
-              </button>
-              <button type="button" className="btn btn-primario" onClick={confirmarHorario}>
-                Continuar
               </button>
             </div>
           </>

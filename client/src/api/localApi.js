@@ -1,5 +1,5 @@
 import { getToken, setToken } from './tokenStorage.js';
-import { sumarMinutos } from '../utils/calendario.js';
+import { sumarMinutos, formatoISO } from '../utils/calendario.js';
 
 const DB_KEY = 'drgab_local_db_v1';
 const DOCTOR_USER = 'doctor';
@@ -512,6 +512,41 @@ async function manejar(method, ruta, queryString, body) {
 
   if (method === 'GET' && ruta === '/public/slots') {
     return manejar('GET', '/turnos/slots', queryString, body);
+  }
+
+  if (method === 'GET' && ruta === '/public/slots-rango') {
+    const especialidad = params.get('especialidad');
+    const desde = params.get('desde');
+    if (!ESPECIALIDADES.includes(especialidad)) throw new ApiError('Especialidad inválida', 400);
+    if (!desde) throw new ApiError('La fecha de inicio es obligatoria', 400);
+    const cantidadDias = Math.min(Math.max(Number(params.get('dias')) || 14, 1), 31);
+
+    const dias = [];
+    const cursor = new Date(`${desde}T00:00:00`);
+    for (let i = 0; i < cantidadDias; i++) {
+      const fecha = formatoISO(cursor);
+      const diaSemana = cursor.getDay();
+      const bloques = db.disponibilidad
+        .filter((b) => b.especialidad === especialidad && b.dia_semana === diaSemana)
+        .sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
+      const ocupados = new Set(
+        db.turnos
+          .filter((t) => t.especialidad === especialidad && t.estado !== 'cancelado' && t.fecha_hora.startsWith(fecha))
+          .map((t) => t.fecha_hora)
+      );
+      const slots = [];
+      for (const bloque of bloques) {
+        let hora = bloque.hora_inicio;
+        while (hora < bloque.hora_fin) {
+          const fechaHora = `${fecha}T${hora}:00`;
+          slots.push({ hora, fechaHora, disponible: !ocupados.has(fechaHora) });
+          hora = sumarMinutos(hora, bloque.duracion_turno);
+        }
+      }
+      if (slots.length > 0) dias.push({ fecha, diaSemana, slots });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return { desde, dias };
   }
 
   if (method === 'POST' && ruta === '/public/turnos') {

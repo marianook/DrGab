@@ -343,6 +343,21 @@ table.tabla tbody tr:active {
   }
 }
 
+.navegador-fechas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.barra-dia {
+  padding: 10px 14px;
+  border-radius: var(--radio);
+  font-weight: 700;
+}
+
 .pagina-publica {
   min-height: 100%;
   padding: 24px 16px;

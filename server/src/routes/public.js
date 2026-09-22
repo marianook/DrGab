@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import db from '../db.js';
-import { calcularSlots } from '../utils/calendario.js';
+import { calcularSlots, calcularRangoSlots } from '../utils/calendario.js';
 import { mpConfigurado, crearPreferencia, obtenerPago } from '../utils/mercadoPago.js';
 
 const router = Router();
@@ -44,6 +44,17 @@ router.get('/slots', (req, res) => {
   }
   if (!fecha) return res.status(400).json({ error: 'La fecha es obligatoria' });
   res.json(calcularSlots(db, especialidad, fecha));
+});
+
+router.get('/slots-rango', (req, res) => {
+  const { especialidad, desde, dias } = req.query;
+  if (!ESPECIALIDADES.includes(especialidad)) {
+    return res.status(400).json({ error: 'Especialidad inválida' });
+  }
+  if (!desde) return res.status(400).json({ error: 'La fecha de inicio es obligatoria' });
+  const cantidadDias = Math.min(Math.max(Number(dias) || 14, 1), 31);
+  const diasConTurnos = calcularRangoSlots(db, especialidad, desde, cantidadDias);
+  res.json({ desde, dias: diasConTurnos });
 });
 
 router.post('/turnos', async (req, res) => {

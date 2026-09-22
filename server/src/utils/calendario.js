@@ -32,3 +32,23 @@ export function calcularSlots(db, especialidad, fecha) {
   }
   return { fecha, especialidad, diaSemana, slots };
 }
+
+function formatoISOFecha(d) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// Para la reserva pública: en vez de elegir un día a la vez, se navega por
+// una ventana de N días (con << Retroceder / Avanzar >>) y se listan solo
+// los días que tienen atención configurada para la especialidad.
+export function calcularRangoSlots(db, especialidad, desdeISO, dias) {
+  const resultado = [];
+  const cursor = new Date(`${desdeISO}T00:00:00`);
+  for (let i = 0; i < dias; i++) {
+    const fecha = formatoISOFecha(cursor);
+    const { diaSemana, slots } = calcularSlots(db, especialidad, fecha);
+    if (slots.length > 0) resultado.push({ fecha, diaSemana, slots });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return resultado;
+}
