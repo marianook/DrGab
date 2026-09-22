@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../../api/client.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { ESPECIALIDADES } from '../../context/SpecialtyContext.jsx';
 import { formatoISO } from '../../utils/calendario.js';
 
 export default function ReservarPublico() {
+  const { usuario } = useAuth();
   const [paso, setPaso] = useState('especialidad');
   const [especialidad, setEspecialidad] = useState('');
   const [fecha, setFecha] = useState(formatoISO(new Date()));
@@ -82,6 +85,11 @@ export default function ReservarPublico() {
   return (
     <div className="pagina-publica">
       <div className="card" style={{ maxWidth: 640, margin: '0 auto', width: '100%' }}>
+        {usuario && (
+          <Link to="/turnos" style={{ display: 'inline-block', marginBottom: 8, fontWeight: 600 }}>
+            ‹ Volver al panel
+          </Link>
+        )}
         <h1>Reservar turno</h1>
         <p className="ayuda">Dra. Gabriela Iñigo Diaz</p>
 

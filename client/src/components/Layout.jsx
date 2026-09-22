@@ -8,6 +8,7 @@ import { MODO_API } from '../api/client.js';
 const ITEMS = [
   { to: '/pacientes', icono: '🧑‍⚕️', label: 'Pacientes' },
   { to: '/turnos', icono: '📅', label: 'Turnos' },
+  { to: '/reservar', icono: '🗓️', label: 'Reservar turno' },
   { to: '/estadisticas', icono: '📊', label: 'Estadísticas' },
   { to: '/configuracion', icono: '⚙️', label: 'Configuración' },
 ];
@@ -32,7 +33,7 @@ export default function Layout() {
         </button>
         <span className="logo">DrGab</span>
 
-        <div className="selector-especialidad">
+        <div className="selector-especialidad" title="Especialidad activa: define qué turnos ves en el calendario y con qué datos vitales se carga una consulta nueva. No filtra la lista de pacientes.">
           <button
             className={`clinica ${especialidad === 'Clinica' ? 'activo' : ''}`}
             onClick={() => setEspecialidad('Clinica')}
