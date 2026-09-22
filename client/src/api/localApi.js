@@ -29,14 +29,34 @@ function crearDBInicial() {
     medicamentos: [],
     adjuntos: [],
     disponibilidad,
+    precios: [
+      { especialidad: 'Clinica', monto: 0 },
+      { especialidad: 'Endocrinologia', monto: 0 },
+    ],
   };
+}
+
+function normalizarDB(db) {
+  if (!Array.isArray(db.precios)) {
+    db.precios = [
+      { especialidad: 'Clinica', monto: 0 },
+      { especialidad: 'Endocrinologia', monto: 0 },
+    ];
+  }
+  for (const t of db.turnos) {
+    if (t.origen === undefined) t.origen = 'manual';
+    if (t.estado_pago === undefined) t.estado_pago = 'no_requerido';
+    if (t.pago_id === undefined) t.pago_id = null;
+    if (t.pago_monto === undefined) t.pago_monto = null;
+  }
+  return db;
 }
 
 function leerDB() {
   try {
     const raw = localStorage.getItem(DB_KEY);
     if (!raw) throw new Error('vacío');
-    return JSON.parse(raw);
+    return normalizarDB(JSON.parse(raw));
   } catch {
     const inicial = crearDBInicial();
     localStorage.setItem(DB_KEY, JSON.stringify(inicial));
@@ -393,6 +413,10 @@ async function manejar(method, ruta, queryString, body) {
       duracion,
       motivo,
       estado: 'pendiente',
+      estado_pago: 'no_requerido',
+      pago_id: null,
+      pago_monto: null,
+      origen: 'manual',
       created_at: ahora(),
     };
     db.turnos.push(turno);
@@ -406,9 +430,12 @@ async function manejar(method, ruta, queryString, body) {
     if (!turno) throw new ApiError('Turno no encontrado', 404);
 
     if (method === 'PUT') {
-      const { fechaHora, estado, motivo } = body || {};
+      const { fechaHora, estado, motivo, estadoPago } = body || {};
       if (estado && !['pendiente', 'completado', 'cancelado'].includes(estado)) {
         throw new ApiError('Estado inválido', 400);
+      }
+      if (estadoPago && !['no_requerido', 'pendiente', 'pagado', 'rechazado'].includes(estadoPago)) {
+        throw new ApiError('Estado de pago inválido', 400);
       }
       if (fechaHora && fechaHora !== turno.fecha_hora) {
         const choque = db.turnos.some(
@@ -419,6 +446,7 @@ async function manejar(method, ruta, queryString, body) {
       }
       if (estado !== undefined) turno.estado = estado;
       if (motivo !== undefined) turno.motivo = motivo;
+      if (estadoPago !== undefined) turno.estado_pago = estadoPago;
       guardarDB(db);
       return conPaciente(db, turno);
     }
@@ -455,6 +483,86 @@ async function manejar(method, ruta, queryString, body) {
     db.disponibilidad = db.disponibilidad.filter((d) => d.id !== id);
     guardarDB(db);
     return null;
+  }
+
+  // --- precios de turno ---
+  if (method === 'GET' && ruta === '/precios') {
+    return db.precios;
+  }
+
+  if (method === 'PUT' && (m = ruta.match(/^\/precios\/(Clinica|Endocrinologia)$/))) {
+    const especialidad = m[1];
+    const monto = Number(body?.monto);
+    if (Number.isNaN(monto) || monto < 0) throw new ApiError('El monto no es válido', 400);
+    const fila = db.precios.find((p) => p.especialidad === especialidad);
+    fila.monto = monto;
+    guardarDB(db);
+    return fila;
+  }
+
+  // --- reserva pública de turnos (sin login) ---
+  // En modo de prueba local no hay backend ni credenciales reales de Mercado
+  // Pago, así que el pago siempre queda "no requerido" y el turno se confirma
+  // directo, para poder ver el flujo completo sin pasarela.
+  if (method === 'GET' && ruta === '/public/precios') {
+    const precios = {};
+    for (const p of db.precios) precios[p.especialidad] = p.monto;
+    return { pagoHabilitado: false, precios };
+  }
+
+  if (method === 'GET' && ruta === '/public/slots') {
+    return manejar('GET', '/turnos/slots', queryString, body);
+  }
+
+  if (method === 'POST' && ruta === '/public/turnos') {
+    const { especialidad, fechaHora, motivo = '', paciente } = body || {};
+    if (!ESPECIALIDADES.includes(especialidad)) throw new ApiError('Especialidad inválida', 400);
+    if (!fechaHora) throw new ApiError('La fecha y hora son obligatorias', 400);
+    const erroresPaciente = validarPaciente(paciente || {});
+    if (erroresPaciente.length) throw new ApiError(erroresPaciente.join('. '), 400);
+    if (db.turnos.some((t) => t.especialidad === especialidad && t.fecha_hora === fechaHora && t.estado !== 'cancelado')) {
+      throw new ApiError('Ese horario ya no está disponible, elegí otro', 409);
+    }
+
+    const dni = paciente.dni.trim();
+    let pacienteRow = db.pacientes.find((p) => p.dni === dni);
+    if (!pacienteRow) {
+      pacienteRow = {
+        id: siguienteId(db, 'pacientes'),
+        nombre: paciente.nombre.trim(),
+        dni,
+        fecha_nacimiento: paciente.fechaNacimiento || '',
+        telefono: paciente.telefono || '',
+        email: paciente.email || '',
+        direccion: '',
+        antecedentes: '',
+        alergias: '',
+        medicamentos_actuales: '',
+        notas_privadas: '',
+        created_at: ahora(),
+        updated_at: ahora(),
+      };
+      db.pacientes.push(pacienteRow);
+    }
+
+    const precioRow = db.precios.find((p) => p.especialidad === especialidad);
+    const turno = {
+      id: siguienteId(db, 'turnos'),
+      paciente_id: pacienteRow.id,
+      especialidad,
+      fecha_hora: fechaHora,
+      duracion: 30,
+      motivo,
+      estado: 'pendiente',
+      estado_pago: 'no_requerido',
+      pago_id: null,
+      pago_monto: precioRow?.monto || 0,
+      origen: 'publico',
+      created_at: ahora(),
+    };
+    db.turnos.push(turno);
+    guardarDB(db);
+    return { turno: conPaciente(db, turno), requierePago: false };
   }
 
   // --- claude (deshabilitado en modo local: no se expone una API key en el navegador) ---

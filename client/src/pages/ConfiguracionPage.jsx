@@ -6,9 +6,14 @@ import ConfirmModal from '../components/ConfirmModal.jsx';
 
 const ESPECIALIDADES = ['Clinica', 'Endocrinologia'];
 
+const ENLACE_RESERVA = `${window.location.origin}${window.location.pathname}#/reservar`;
+
 export default function ConfiguracionPage() {
   const { tema, alternarTema } = useTheme();
   const [disponibilidad, setDisponibilidad] = useState([]);
+  const [precios, setPrecios] = useState([]);
+  const [guardandoPrecio, setGuardandoPrecio] = useState('');
+  const [copiado, setCopiado] = useState(false);
   const [error, setError] = useState('');
   const [nuevo, setNuevo] = useState({
     especialidad: 'Clinica',
@@ -21,8 +26,32 @@ export default function ConfiguracionPage() {
 
   const cargar = () => {
     api.get('/disponibilidad').then(setDisponibilidad).catch((e) => setError(e.message));
+    api.get('/precios').then(setPrecios).catch((e) => setError(e.message));
   };
   useEffect(cargar, []);
+
+  const actualizarPrecio = async (especialidad, monto) => {
+    setGuardandoPrecio(especialidad);
+    setError('');
+    try {
+      await api.put(`/precios/${especialidad}`, { monto: Number(monto) });
+      cargar();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGuardandoPrecio('');
+    }
+  };
+
+  const copiarEnlace = async () => {
+    try {
+      await navigator.clipboard.writeText(ENLACE_RESERVA);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      setError('No se pudo copiar el enlace. Copialo manualmente.');
+    }
+  };
 
   const agregar = async (e) => {
     e.preventDefault();
@@ -53,6 +82,50 @@ export default function ConfiguracionPage() {
         <button className="btn btn-secundario" onClick={alternarTema}>
           Cambiar a modo {tema === 'claro' ? 'oscuro' : 'claro'}
         </button>
+      </div>
+
+      <div className="card">
+        <h3>Reserva de turnos online</h3>
+        <p className="ayuda">
+          Compartí este enlace con tus pacientes para que reserven su propio turno, eligiendo especialidad, fecha y
+          horario disponible.
+        </p>
+        <div className="form-grid dos-columnas" style={{ alignItems: 'end' }}>
+          <div className="campo">
+            <label htmlFor="enlace-reserva">Enlace público</label>
+            <input id="enlace-reserva" value={ENLACE_RESERVA} readOnly />
+          </div>
+          <button type="button" className="btn btn-secundario" onClick={copiarEnlace}>
+            {copiado ? 'Copiado ✓' : 'Copiar enlace'}
+          </button>
+        </div>
+      </div>
+
+      <div className="card">
+        <h3>Precio del turno por especialidad</h3>
+        <p className="ayuda">
+          Si cargás un monto mayor a $0 y configurás Mercado Pago en el servidor, el paciente deberá abonarlo online
+          para confirmar su turno. Con $0 (o sin Mercado Pago configurado), la reserva pública queda confirmada sin
+          pago.
+        </p>
+        <div className="form-grid dos-columnas">
+          {precios.map((p) => (
+            <div className="campo" key={p.especialidad}>
+              <label htmlFor={`precio-${p.especialidad}`}>{p.especialidad === 'Clinica' ? 'Clínica' : 'Endocrinología'}</label>
+              <input
+                id={`precio-${p.especialidad}`}
+                type="number"
+                min={0}
+                step={100}
+                defaultValue={p.monto}
+                onBlur={(e) => {
+                  if (Number(e.target.value) !== p.monto) actualizarPrecio(p.especialidad, e.target.value);
+                }}
+                disabled={guardandoPrecio === p.especialidad}
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="card">

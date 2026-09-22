@@ -7,6 +7,8 @@ import ConfirmModal from '../components/ConfirmModal.jsx';
 import { formatoISO, slotsPosiblesPorDia } from '../utils/calendario.js';
 
 const ESTADO_LABEL = { pendiente: 'Pendiente', completado: 'Completado', cancelado: 'Cancelado' };
+const ESTADO_PAGO_LABEL = { pendiente: 'Pago pendiente', pagado: 'Pagado', rechazado: 'Pago rechazado' };
+const ESTADO_PAGO_CLASE = { pendiente: 'badge-estado-pendiente', pagado: 'badge-estado-completado', rechazado: 'badge-estado-cancelado' };
 
 function formatoHora(fechaHora) {
   return new Date(fechaHora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
@@ -100,6 +102,11 @@ export default function TurnosPage() {
     cargarMes();
   };
 
+  const marcarPagado = async (turno) => {
+    await api.put(`/turnos/${turno.id}`, { estadoPago: 'pagado' });
+    cargarMes();
+  };
+
   return (
     <div>
       <div className="encabezado-pagina">
@@ -147,9 +154,19 @@ export default function TurnosPage() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                   <div>
                     <strong>{formatoHora(t.fecha_hora)}</strong> — {t.paciente?.nombre}
+                    {t.origen === 'publico' && (
+                      <span className="badge badge-clinica" style={{ marginLeft: 8 }}>
+                        Reservado online
+                      </span>
+                    )}
                     <div style={{ fontSize: 14, color: 'var(--color-texto-suave)' }}>{t.motivo || 'Sin motivo especificado'}</div>
                   </div>
-                  <span className={`badge badge-estado-${t.estado}`}>{ESTADO_LABEL[t.estado]}</span>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <span className={`badge badge-estado-${t.estado}`}>{ESTADO_LABEL[t.estado]}</span>
+                    {t.estado_pago && t.estado_pago !== 'no_requerido' && (
+                      <span className={`badge ${ESTADO_PAGO_CLASE[t.estado_pago]}`}>{ESTADO_PAGO_LABEL[t.estado_pago]}</span>
+                    )}
+                  </div>
                 </div>
                 {t.estado === 'pendiente' && (
                   <div className="grupo-botones" style={{ marginTop: 10 }}>
@@ -159,6 +176,11 @@ export default function TurnosPage() {
                     <button className="btn btn-secundario" onClick={() => marcarCompletado(t)}>
                       Marcar completado
                     </button>
+                    {t.estado_pago === 'pendiente' && (
+                      <button className="btn btn-secundario" onClick={() => marcarPagado(t)}>
+                        Marcar como pagado
+                      </button>
+                    )}
                     <button className="btn btn-peligro" onClick={() => setTurnoACancelar(t)}>
                       Cancelar
                     </button>

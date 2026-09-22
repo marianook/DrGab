@@ -60,6 +60,10 @@ CREATE TABLE IF NOT EXISTS turnos (
   duracion INTEGER NOT NULL DEFAULT 30,
   motivo TEXT DEFAULT '',
   estado TEXT NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente','completado','cancelado')),
+  estado_pago TEXT NOT NULL DEFAULT 'no_requerido' CHECK (estado_pago IN ('no_requerido','pendiente','pagado','rechazado')),
+  pago_id TEXT,
+  pago_monto REAL,
+  origen TEXT NOT NULL DEFAULT 'manual' CHECK (origen IN ('manual','publico')),
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -70,6 +74,11 @@ CREATE TABLE IF NOT EXISTS disponibilidad (
   hora_inicio TEXT NOT NULL,
   hora_fin TEXT NOT NULL,
   duracion_turno INTEGER NOT NULL DEFAULT 30
+);
+
+CREATE TABLE IF NOT EXISTS precios_turno (
+  especialidad TEXT PRIMARY KEY CHECK (especialidad IN ('Clinica','Endocrinologia')),
+  monto REAL NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_consultas_paciente ON consultas(paciente_id);

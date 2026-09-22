@@ -10,6 +10,8 @@ import pacientesRoutes from './routes/pacientes.js';
 import consultasRoutes, { uploadsDir } from './routes/consultas.js';
 import turnosRoutes from './routes/turnos.js';
 import disponibilidadRoutes from './routes/disponibilidad.js';
+import preciosRoutes from './routes/precios.js';
+import publicRoutes from './routes/public.js';
 import claudeRoutes from './routes/claude.js';
 import statsRoutes from './routes/stats.js';
 
@@ -22,10 +24,12 @@ app.use('/uploads', express.static(uploadsDir));
 
 app.use('/api/auth', authRoutes);
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.use('/api/public', publicRoutes);
 app.use('/api/pacientes', requireAuth, pacientesRoutes);
 app.use('/api', requireAuth, consultasRoutes);
 app.use('/api/turnos', requireAuth, turnosRoutes);
 app.use('/api/disponibilidad', requireAuth, disponibilidadRoutes);
+app.use('/api/precios', requireAuth, preciosRoutes);
 app.use('/api/claude', requireAuth, claudeRoutes);
 app.use('/api/stats', requireAuth, statsRoutes);
 

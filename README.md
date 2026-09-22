@@ -66,6 +66,9 @@ Variables de entorno (`server/.env`):
 | `DOCTOR_USER` | Usuario de acceso | `doctor` |
 | `DOCTOR_PASSWORD` | Contraseña de acceso | `doctor123` |
 | `ANTHROPIC_API_KEY` | Habilita las sugerencias con IA (opcional) | vacío = función deshabilitada |
+| `MP_ACCESS_TOKEN` | Access token de Mercado Pago; habilita el cobro online en la reserva pública (opcional) | vacío = reserva pública sin pago |
+| `APP_URL` | URL pública del frontend (a donde Mercado Pago devuelve al paciente tras pagar) | `http://localhost:5173` |
+| `API_PUBLIC_URL` | URL pública de este backend (a donde Mercado Pago envía la notificación de pago) | `http://localhost:4000` |
 
 La base de datos SQLite se guarda en `server/data/clinic.db` (persistente entre reinicios) y los archivos adjuntos en `server/uploads/`.
 
@@ -86,6 +89,9 @@ Para producción: `npm run build` genera `client/dist`, que puede servirse con c
 - **Pacientes**: alta, búsqueda instantánea, edición, perfil completo con antecedentes, alergias, medicamentos actuales y notas privadas.
 - **Historia clínica**: consultas por especialidad (Clínica / Endocrinología) con datos vitales específicos, diagnóstico, tratamiento, medicamentos prescriptos, adjuntos de estudios, y cronología filtrable.
 - **Turnos**: calendario mensual táctil, disponibilidad semanal configurable por especialidad, reserva/cancelación/reprogramación, recordatorio de próximos turnos.
+- **Reserva pública de turnos** (`/#/reservar`, sin login): el propio paciente elige especialidad, fecha y horario disponible según la disponibilidad configurada por la doctora, y se identifica con nombre y DNI (si el DNI ya existe, se usa esa ficha; si no, se crea una nueva) para que el turno quede asentado en su historia clínica. La doctora sigue pudiendo cargar turnos manualmente desde su panel (ej. pacientes que llaman por teléfono). El enlace para compartir con pacientes está en **Configuración**.
+  - **Pago del turno (Mercado Pago, opcional)**: en Configuración se puede cargar un precio por especialidad. Si además el backend tiene `MP_ACCESS_TOKEN` configurado, la reserva pública redirige a Mercado Pago (Checkout Pro) para cobrar antes de confirmar el turno, y un webhook actualiza el estado de pago automáticamente. **Mientras no se cargue `MP_ACCESS_TOKEN`, todo el flujo funciona igual pero sin pedir pago** (el turno queda confirmado directo), para poder probar el sistema completo antes de activar el cobro online. La doctora también puede marcar un turno como "pagado" manualmente desde su panel de turnos (ej. si el paciente pagó en efectivo o por transferencia).
+  - En el **modo local (localStorage)** la reserva pública funciona igual, pero el pago siempre queda "no requerido": al no haber backend ni credenciales reales, no tiene sentido simular una pasarela de pago ahí.
 - **IA (opcional, requiere `ANTHROPIC_API_KEY`)**: sugerencia de diagnósticos diferenciales y estudios recomendados a partir de los síntomas, análisis de valores de laboratorio en Endocrinología, y generación de resúmenes automáticos de consulta.
 - **Extras**: alertas de valores clínicos críticos, gráficos de evolución (glucemia, HbA1c, peso, TSH), estadísticas por especialidad, modo oscuro, dictado por voz de síntomas/notas (Chrome/Edge), impresión de consulta/receta con membrete por especialidad.
 

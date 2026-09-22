@@ -10,6 +10,8 @@ import ConsultaDetail from './pages/ConsultaDetail.jsx';
 import TurnosPage from './pages/TurnosPage.jsx';
 import ConfiguracionPage from './pages/ConfiguracionPage.jsx';
 import EstadisticasPage from './pages/EstadisticasPage.jsx';
+import ReservarPublico from './pages/public/ReservarPublico.jsx';
+import ConfirmacionPago from './pages/public/ConfirmacionPago.jsx';
 
 function RutaPrivada({ children }) {
   const { usuario, cargando } = useAuth();
@@ -22,6 +24,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/reservar" element={<ReservarPublico />} />
+      <Route path="/reservar/confirmacion" element={<ConfirmacionPago />} />
       <Route
         path="/"
         element={

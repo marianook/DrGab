@@ -343,6 +343,14 @@ table.tabla tbody tr:active {
   }
 }
 
+.pagina-publica {
+  min-height: 100%;
+  padding: 24px 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
 .banner-demo-local {
   background: #fff3cd;
   color: #8a6300;

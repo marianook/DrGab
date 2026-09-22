@@ -1,21 +1,15 @@
 import { Router } from 'express';
 import db from '../db.js';
+import { calcularSlots } from '../utils/calendario.js';
 
 const router = Router();
 const ESPECIALIDADES = ['Clinica', 'Endocrinologia'];
 const ESTADOS = ['pendiente', 'completado', 'cancelado'];
+const ESTADOS_PAGO = ['no_requerido', 'pendiente', 'pagado', 'rechazado'];
 
 function conPaciente(turno) {
   const paciente = db.prepare('SELECT id, nombre, dni, telefono FROM pacientes WHERE id = ?').get(turno.paciente_id);
   return { ...turno, paciente };
-}
-
-function sumarMinutos(hora, minutos) {
-  const [h, m] = hora.split(':').map(Number);
-  const total = h * 60 + m + minutos;
-  const hh = String(Math.floor(total / 60)).padStart(2, '0');
-  const mm = String(total % 60).padStart(2, '0');
-  return `${hh}:${mm}`;
 }
 
 router.get('/', (req, res) => {
@@ -68,30 +62,7 @@ router.get('/slots', (req, res) => {
   }
   if (!fecha) return res.status(400).json({ error: 'La fecha es obligatoria' });
 
-  const diaSemana = new Date(`${fecha}T00:00:00`).getDay();
-  const bloques = db
-    .prepare('SELECT * FROM disponibilidad WHERE especialidad = ? AND dia_semana = ? ORDER BY hora_inicio')
-    .all(especialidad, diaSemana);
-
-  const ocupados = new Set(
-    db
-      .prepare(
-        `SELECT fecha_hora FROM turnos WHERE especialidad = ? AND estado != 'cancelado' AND date(fecha_hora) = date(?)`
-      )
-      .all(especialidad, fecha)
-      .map((t) => t.fecha_hora)
-  );
-
-  const slots = [];
-  for (const bloque of bloques) {
-    let hora = bloque.hora_inicio;
-    while (hora < bloque.hora_fin) {
-      const fechaHora = `${fecha}T${hora}:00`;
-      slots.push({ hora, fechaHora, disponible: !ocupados.has(fechaHora) });
-      hora = sumarMinutos(hora, bloque.duracion_turno);
-    }
-  }
-  res.json({ fecha, especialidad, diaSemana, slots });
+  res.json(calcularSlots(db, especialidad, fecha));
 });
 
 router.post('/', (req, res) => {
@@ -115,7 +86,8 @@ router.post('/', (req, res) => {
 
   const info = db
     .prepare(
-      `INSERT INTO turnos (paciente_id, especialidad, fecha_hora, duracion, motivo) VALUES (?, ?, ?, ?, ?)`
+      `INSERT INTO turnos (paciente_id, especialidad, fecha_hora, duracion, motivo, origen, estado_pago)
+       VALUES (?, ?, ?, ?, ?, 'manual', 'no_requerido')`
     )
     .run(pacienteId, especialidad, fechaHora, duracion, motivo);
 
@@ -127,9 +99,12 @@ router.put('/:id', (req, res) => {
   const existente = db.prepare('SELECT * FROM turnos WHERE id = ?').get(req.params.id);
   if (!existente) return res.status(404).json({ error: 'Turno no encontrado' });
 
-  const { fechaHora, estado, motivo } = req.body || {};
+  const { fechaHora, estado, motivo, estadoPago } = req.body || {};
   if (estado && !ESTADOS.includes(estado)) {
     return res.status(400).json({ error: 'Estado inválido' });
+  }
+  if (estadoPago && !ESTADOS_PAGO.includes(estadoPago)) {
+    return res.status(400).json({ error: 'Estado de pago inválido' });
   }
 
   if (fechaHora && fechaHora !== existente.fecha_hora) {
@@ -154,6 +129,10 @@ router.put('/:id', (req, res) => {
   if (motivo !== undefined) {
     sets.push('motivo = ?');
     valores.push(motivo);
+  }
+  if (estadoPago !== undefined) {
+    sets.push('estado_pago = ?');
+    valores.push(estadoPago);
   }
   if (sets.length) {
     valores.push(req.params.id);
