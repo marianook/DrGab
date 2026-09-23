@@ -6,6 +6,17 @@ export function sumarMinutos(hora, minutos) {
   return `${hh}:${mm}`;
 }
 
+function formatoISOFecha(d) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function ahoraLocalISO() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${formatoISOFecha(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 export function calcularSlots(db, especialidad, fecha) {
   const diaSemana = new Date(`${fecha}T00:00:00`).getDay();
   const bloques = db
@@ -21,21 +32,19 @@ export function calcularSlots(db, especialidad, fecha) {
       .map((t) => t.fecha_hora)
   );
 
+  const ahora = ahoraLocalISO();
   const slots = [];
   for (const bloque of bloques) {
     let hora = bloque.hora_inicio;
     while (hora < bloque.hora_fin) {
       const fechaHora = `${fecha}T${hora}:00`;
-      slots.push({ hora, fechaHora, disponible: !ocupados.has(fechaHora) });
+      if (fechaHora >= ahora) {
+        slots.push({ hora, fechaHora, disponible: !ocupados.has(fechaHora) });
+      }
       hora = sumarMinutos(hora, bloque.duracion_turno);
     }
   }
   return { fecha, especialidad, diaSemana, slots };
-}
-
-function formatoISOFecha(d) {
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 // Para la reserva pública: en vez de elegir un día a la vez, se navega por

@@ -385,12 +385,15 @@ async function manejar(method, ruta, queryString, body) {
         .map((t) => t.fecha_hora)
     );
 
+    const ahoraStr = ahora();
     const slots = [];
     for (const bloque of bloques) {
       let hora = bloque.hora_inicio;
       while (hora < bloque.hora_fin) {
         const fechaHora = `${fecha}T${hora}:00`;
-        slots.push({ hora, fechaHora, disponible: !ocupados.has(fechaHora) });
+        if (fechaHora >= ahoraStr) {
+          slots.push({ hora, fechaHora, disponible: !ocupados.has(fechaHora) });
+        }
         hora = sumarMinutos(hora, bloque.duracion_turno);
       }
     }
@@ -521,6 +524,7 @@ async function manejar(method, ruta, queryString, body) {
     if (!desde) throw new ApiError('La fecha de inicio es obligatoria', 400);
     const cantidadDias = Math.min(Math.max(Number(params.get('dias')) || 14, 1), 31);
 
+    const ahoraStr = ahora();
     const dias = [];
     const cursor = new Date(`${desde}T00:00:00`);
     for (let i = 0; i < cantidadDias; i++) {
@@ -539,7 +543,9 @@ async function manejar(method, ruta, queryString, body) {
         let hora = bloque.hora_inicio;
         while (hora < bloque.hora_fin) {
           const fechaHora = `${fecha}T${hora}:00`;
-          slots.push({ hora, fechaHora, disponible: !ocupados.has(fechaHora) });
+          if (fechaHora >= ahoraStr) {
+            slots.push({ hora, fechaHora, disponible: !ocupados.has(fechaHora) });
+          }
           hora = sumarMinutos(hora, bloque.duracion_turno);
         }
       }
