@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useSpecialty } from '../context/SpecialtyContext.jsx';
 import Calendar from '../components/Calendar.jsx';
@@ -16,6 +17,7 @@ function formatoHora(fechaHora) {
 
 export default function TurnosPage() {
   const { especialidad } = useSpecialty();
+  const navigate = useNavigate();
   const hoy = new Date();
   const [vista, setVista] = useState('calendario');
   const [anio, setAnio] = useState(hoy.getFullYear());
@@ -27,6 +29,7 @@ export default function TurnosPage() {
   const [proximos, setProximos] = useState([]);
   const [modalReserva, setModalReserva] = useState(null);
   const [turnoACancelar, setTurnoACancelar] = useState(null);
+  const [turnoRecienCompletado, setTurnoRecienCompletado] = useState(null);
   const [error, setError] = useState('');
 
   const cargarMes = () => {
@@ -116,6 +119,7 @@ export default function TurnosPage() {
   const marcarCompletado = async (turno) => {
     await api.put(`/turnos/${turno.id}`, { estado: 'completado' });
     recargar();
+    setTurnoRecienCompletado(turno);
   };
 
   const marcarPagado = async (turno) => {
@@ -365,6 +369,17 @@ export default function TurnosPage() {
           onConfirmar={cancelarTurno}
           onCancelar={() => setTurnoACancelar(null)}
           textoConfirmar="Sí, cancelar"
+        />
+      )}
+
+      {turnoRecienCompletado && (
+        <ConfirmModal
+          titulo="Turno completado"
+          mensaje={`¿Querés cargar ahora la consulta de ${turnoRecienCompletado.paciente?.nombre}? Marcar el turno como completado no registra por sí solo los datos clínicos de la visita.`}
+          onConfirmar={() => navigate(`/pacientes/${turnoRecienCompletado.paciente_id}/consultas/nueva`)}
+          onCancelar={() => setTurnoRecienCompletado(null)}
+          peligro={false}
+          textoConfirmar="Cargar consulta"
         />
       )}
     </div>

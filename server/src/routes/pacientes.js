@@ -57,6 +57,10 @@ router.get('/:id', (req, res) => {
     )
     .all(paciente.id);
 
+  const turnos = db
+    .prepare('SELECT * FROM turnos WHERE paciente_id = ? ORDER BY fecha_hora DESC')
+    .all(paciente.id);
+
   const medicamentos = db
     .prepare('SELECT * FROM medicamentos_prescriptos WHERE paciente_id = ? ORDER BY fecha DESC')
     .all(paciente.id);
@@ -65,6 +69,7 @@ router.get('/:id', (req, res) => {
     ...conEspecialidades(paciente),
     consultas,
     proximosTurnos,
+    turnos,
     medicamentos,
   });
 });

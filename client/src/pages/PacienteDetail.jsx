@@ -22,6 +22,8 @@ function formatoFechaHora(fechaHora) {
   return d.toLocaleString('es-AR', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+const ESTADO_TURNO_LABEL = { pendiente: 'Pendiente', completado: 'Completado', cancelado: 'Cancelado' };
+
 export default function PacienteDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -50,6 +52,16 @@ export default function PacienteDetail() {
     if (filtroEsp === 'todas') return paciente.consultas;
     return paciente.consultas.filter((c) => c.especialidad === filtroEsp);
   }, [paciente, filtroEsp]);
+
+  const estadisticasTurnos = useMemo(() => {
+    const turnos = paciente?.turnos || [];
+    return {
+      total: turnos.length,
+      completados: turnos.filter((t) => t.estado === 'completado').length,
+      cancelados: turnos.filter((t) => t.estado === 'cancelado').length,
+      pendientes: turnos.filter((t) => t.estado === 'pendiente').length,
+    };
+  }, [paciente]);
 
   const serieEndocrino = useMemo(() => {
     if (!paciente) return [];
@@ -129,6 +141,59 @@ export default function PacienteDetail() {
             ))
           )}
         </div>
+      </div>
+
+      <div className="card">
+        <h3>Historial de turnos</h3>
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 800 }}>{estadisticasTurnos.total}</div>
+            <div style={{ fontSize: 13, color: 'var(--color-texto-suave)' }}>Turnos totales</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#1e7e34' }}>{estadisticasTurnos.completados}</div>
+            <div style={{ fontSize: 13, color: 'var(--color-texto-suave)' }}>Veces atendido</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 800 }}>{estadisticasTurnos.pendientes}</div>
+            <div style={{ fontSize: 13, color: 'var(--color-texto-suave)' }}>Pendientes</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--color-peligro)' }}>{estadisticasTurnos.cancelados}</div>
+            <div style={{ fontSize: 13, color: 'var(--color-texto-suave)' }}>Cancelados</div>
+          </div>
+        </div>
+
+        {(paciente.turnos || []).length === 0 ? (
+          <p style={{ color: 'var(--color-texto-suave)' }}>Todavía no tiene turnos registrados.</p>
+        ) : (
+          <div className="tabla-wrap">
+            <table className="tabla">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Especialidad</th>
+                  <th className="oculto-movil">Motivo</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paciente.turnos.map((t) => (
+                  <tr key={t.id}>
+                    <td>{formatoFechaHora(t.fecha_hora)}</td>
+                    <td>
+                      <EspecialidadBadge especialidad={t.especialidad} />
+                    </td>
+                    <td className="oculto-movil">{t.motivo || '—'}</td>
+                    <td>
+                      <span className={`badge badge-estado-${t.estado}`}>{ESTADO_TURNO_LABEL[t.estado]}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       <div className="card">

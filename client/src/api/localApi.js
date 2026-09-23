@@ -205,10 +205,13 @@ async function manejar(method, ruta, queryString, body) {
       const proximosTurnos = db.turnos
         .filter((t) => t.paciente_id === id && t.estado === 'pendiente' && t.fecha_hora >= ahora())
         .sort((a, b) => a.fecha_hora.localeCompare(b.fecha_hora));
+      const turnos = db.turnos
+        .filter((t) => t.paciente_id === id)
+        .sort((a, b) => b.fecha_hora.localeCompare(a.fecha_hora));
       const medicamentos = db.medicamentos
         .filter((med) => med.paciente_id === id)
         .sort((a, b) => b.fecha.localeCompare(a.fecha));
-      return { ...conEspecialidades(db, paciente), consultas, proximosTurnos, medicamentos };
+      return { ...conEspecialidades(db, paciente), consultas, proximosTurnos, turnos, medicamentos };
     }
 
     if (method === 'PUT') {
