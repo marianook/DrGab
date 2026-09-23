@@ -38,13 +38,15 @@ export default function Layout() {
             className={`clinica ${especialidad === 'Clinica' ? 'activo' : ''}`}
             onClick={() => setEspecialidad('Clinica')}
           >
-            Clínica
+            <span className="texto-largo">Clínica</span>
+            <span className="texto-corto">Clín.</span>
           </button>
           <button
             className={`endocrino ${especialidad === 'Endocrinologia' ? 'activo' : ''}`}
             onClick={() => setEspecialidad('Endocrinologia')}
           >
-            Endocrinología
+            <span className="texto-largo">Endocrinología</span>
+            <span className="texto-corto">Endo.</span>
           </button>
         </div>
 
@@ -59,7 +61,7 @@ export default function Layout() {
 
         <div className="usuario">
           <span className="oculto-movil">{usuario}</span>
-          <button className="btn btn-secundario" onClick={cerrarSesion} style={{ minHeight: 44, padding: '8px 16px' }}>
+          <button className="btn btn-secundario btn-salir" onClick={cerrarSesion} style={{ minHeight: 44 }}>
             Salir
           </button>
         </div>

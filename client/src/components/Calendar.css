@@ -14,11 +14,12 @@
 .calendario-header h3 {
   margin: 0;
   text-transform: capitalize;
+  white-space: nowrap;
 }
 
 .calendario-dias-semana {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   text-align: center;
   font-size: 13px;
   font-weight: 700;
@@ -28,12 +29,13 @@
 
 .calendario-grilla {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
 }
 
 .calendario-celda {
   min-height: 52px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -122,5 +124,23 @@
   }
   .calendario-contador {
     font-size: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .calendario {
+    padding: 10px;
+  }
+  .calendario-header h3 {
+    font-size: 16px;
+  }
+  .calendario-grilla {
+    gap: 3px;
+  }
+  .calendario-celda {
+    font-size: 13px;
+  }
+  .calendario-contador {
+    font-size: 9px;
   }
 }

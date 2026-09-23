@@ -66,6 +66,9 @@
   background: var(--color-endocrino);
   color: #fff;
 }
+.selector-especialidad .texto-corto {
+  display: none;
+}
 
 .topbar .usuario {
   display: flex;
@@ -77,6 +80,43 @@
 .topbar .usuario span {
   font-size: 14px;
   color: var(--color-texto-suave);
+}
+.btn-salir {
+  padding: 8px 16px;
+}
+
+/* Pantallas muy angostas (celulares chicos): la barra superior se comprime
+   para que nunca fuerce scroll horizontal de toda la página. */
+@media (max-width: 420px) {
+  .topbar {
+    gap: 6px;
+    padding: 0 8px;
+  }
+  .topbar .logo {
+    font-size: 16px;
+  }
+  .selector-especialidad {
+    gap: 4px;
+  }
+  .selector-especialidad button {
+    min-width: 0;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .selector-especialidad .texto-largo {
+    display: none;
+  }
+  .selector-especialidad .texto-corto {
+    display: inline;
+  }
+  .topbar .usuario {
+    gap: 6px;
+    margin-left: 4px;
+  }
+  .btn-salir {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
 }
 
 .sidebar {
